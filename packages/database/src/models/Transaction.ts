@@ -35,7 +35,7 @@ const TransactionSchema = new Schema<TransactionDocument>(
     // All arithmetic is done via Decimal.js in the engine — never with JS Number.
     amount: {
       type: String,
-      default: null,
+      required: true,
     },
     type: {
       type: String,
