@@ -1,6 +1,6 @@
 import { parse } from 'csv-parse';
 import { Readable } from 'stream';
-import { TransactionSource, IngestionStatus, RawTransactionRow } from '@repo/types';
+import { TransactionSource, IngestionStatus, RawTransactionRow, TransactionType } from '@repo/types';
 import { TransactionModel } from '@repo/database';
 import { logger } from '@repo/logger';
 import { normalizeAsset, normalizeType, normalizeAmount, normalizeTimestamp } from './normalizer';
@@ -17,7 +17,9 @@ export interface IngestionResult {
  * Ingests a CSV buffer into the database, associated with a given run.
  *
  * Design decisions:
- * - Streaming via csv-parse: handles large files without loading them into memory.
+ * - `for await...of` over the parser: unlike `.on('data', async ...)`, async
+ *   iteration applies proper backpressure — the stream pauses until each row's
+ *   processing (including any DB writes) fully completes before advancing.
  * - Batch inserts (500 rows): prevents overwhelming MongoDB with individual writes.
  * - Never throws on a bad row: all errors are captured into validationErrors
  *   and the row is stored with ingestionStatus: INVALID.
@@ -31,158 +33,108 @@ export async function ingestCsv(
   source: TransactionSource,
   runId: string,
 ): Promise<IngestionResult> {
-  logger.info(`Starting CSV ingestion`, { source, runId });
+  logger.info('Starting CSV ingestion', { source, runId });
 
   const result: IngestionResult = { totalRows: 0, validRows: 0, invalidRows: 0 };
   const batch: object[] = [];
-
   const seenIds = new Set<string>();
 
-  await new Promise<void>((resolve, reject) => {
-    const stream = Readable.from([csvBuffer]);
-    const parser = parse({
-      columns: true,        // Use first row as column names
+  const parser = Readable.from([csvBuffer]).pipe(
+    parse({
+      columns: true,            // Use first row as column names
       skip_empty_lines: true,
-      trim: true,           // Trim whitespace from all values
+      trim: true,               // Trim whitespace from all values
       relax_column_count: true, // Don't throw on rows with mismatched column count
-    });
-    let isSettled = false;
+    }),
+  );
 
-    const rejectOnce = (err: unknown) => {
-      if (isSettled) {
-        return;
-      }
+  for await (const rawRow of parser as AsyncIterable<RawTransactionRow>) {
+    result.totalRows++;
 
-      isSettled = true;
-      reject(err);
-    };
+    const validationErrors: string[] = [];
 
-    const resolveOnce = () => {
-      if (isSettled) {
-        return;
-      }
+    // ── Field extraction ──────────────────────────────────────────────────────
+    const originalId = (rawRow['transaction_id'] ?? '').trim();
+    const rawTimestamp = rawRow['timestamp'] ?? '';
+    const rawType = rawRow['type'] ?? '';
+    const rawAsset = rawRow['asset'] ?? '';
+    const rawAmount = rawRow['quantity'] ?? '';
 
-      isSettled = true;
-      resolve();
-    };
+    // ── Validation ────────────────────────────────────────────────────────────
+    if (!originalId) {
+      validationErrors.push('Missing transaction_id');
+    }
 
-    stream
-      .pipe(parser)
-      .on('data', async (rawRow: RawTransactionRow) => {
-        result.totalRows++;
+    // Duplicate detection within this file
+    if (originalId && seenIds.has(originalId)) {
+      validationErrors.push(`Duplicate transaction_id: ${originalId}`);
+    } else if (originalId) {
+      seenIds.add(originalId);
+    }
 
-        const validationErrors: string[] = [];
+    const timestamp = normalizeTimestamp(rawTimestamp);
+    if (!timestamp) {
+      validationErrors.push(`Invalid or missing timestamp: "${rawTimestamp}"`);
+    }
 
-        // ── Field extraction ─────────────────────────────────────────────────
-        const originalId = (rawRow['transaction_id'] ?? '').trim();
-        const rawTimestamp = rawRow['timestamp'] ?? '';
-        const rawType = rawRow['type'] ?? '';
-        const rawAsset = rawRow['asset'] ?? '';
-        const rawAmount = rawRow['quantity'] ?? '';
+    const asset = rawAsset ? normalizeAsset(rawAsset) : null;
+    if (!asset) {
+      validationErrors.push('Missing asset');
+    }
 
-        // ── Validation ───────────────────────────────────────────────────────
-        if (!originalId) {
-          validationErrors.push('Missing transaction_id');
-        }
+    const amount = rawAmount ? normalizeAmount(rawAmount) : null;
+    if (amount === null) {
+      validationErrors.push(`Invalid or missing quantity: "${rawAmount}"`);
+    } else if (parseFloat(amount) < 0) {
+      validationErrors.push(`Negative quantity is invalid: "${amount}"`);
+    }
 
-        // Duplicate detection within this file
-        if (originalId && seenIds.has(originalId)) {
-          validationErrors.push(`Duplicate transaction_id: ${originalId}`);
-        } else if (originalId) {
-          seenIds.add(originalId);
-        }
+    // Always call normalizeType — empty/unknown strings return TransactionType.UNKNOWN.
+    // Passing null would bypass the Mongoose schema default and cause cast failures.
+    const type: TransactionType = normalizeType(rawType);
 
-        const timestamp = normalizeTimestamp(rawTimestamp);
-        if (!timestamp) {
-          validationErrors.push(`Invalid or missing timestamp: "${rawTimestamp}"`);
-        }
+    const isValid = validationErrors.length === 0;
 
-        const asset = rawAsset ? normalizeAsset(rawAsset) : null;
-        if (!asset) {
-          validationErrors.push('Missing asset');
-        }
-
-        const amount = rawAmount ? normalizeAmount(rawAmount) : null;
-        if (amount === null) {
-          validationErrors.push(`Invalid or missing quantity: "${rawAmount}"`);
-        } else if (parseFloat(amount) < 0) {
-          validationErrors.push(`Negative quantity is invalid: "${amount}"`);
-        }
-
-        const type = normalizeType(rawType);
-        // We don't fail on unknown type — UNKNOWN is a valid enum value
-
-        const isValid = validationErrors.length === 0;
-
-        if (!isValid) {
-          logger.warn(`Invalid row detected`, {
-            source,
-            runId,
-            originalId: originalId || '(missing)',
-            errors: validationErrors,
-          });
-        }
-
-        // ── Build document ───────────────────────────────────────────────────
-        batch.push({
-          runId,
-          source,
-          originalId: originalId || `MISSING_ID_ROW_${result.totalRows}`,
-          timestamp: timestamp ?? null,
-          asset: asset ?? 'UNKNOWN',
-          amount: amount ?? '0',
-          type,
-          rawData: rawRow,
-          ingestionStatus: isValid ? IngestionStatus.VALID : IngestionStatus.INVALID,
-          validationErrors,
-        });
-
-        isValid ? result.validRows++ : result.invalidRows++;
-
-        // ── Flush batch ──────────────────────────────────────────────────────
-        if (batch.length >= BATCH_SIZE) {
-          const toInsert = batch.splice(0, BATCH_SIZE);
-          try {
-            await TransactionModel.insertMany(toInsert, { ordered: false });
-          } catch (err) {
-            logger.error('CSV batch insert error', {
-              source,
-              runId,
-              error: err instanceof Error ? err.message : String(err),
-            });
-            rejectOnce(err);
-            parser.destroy(err instanceof Error ? err : new Error(String(err)));
-          }
-        }
-      })
-      .on('error', (err) => {
-        logger.error('CSV parse error', { source, runId, error: err.message });
-        rejectOnce(err);
-      })
-      .on('end', async () => {
-        try {
-          // Flush remaining rows
-          if (batch.length > 0) {
-            await TransactionModel.insertMany(batch, { ordered: false });
-          }
-
-          logger.info('CSV ingestion complete', {
-            source,
-            runId,
-            ...result,
-          });
-
-          resolveOnce();
-        } catch (err) {
-          logger.error('CSV ingestion final batch insert error', {
-            source,
-            runId,
-            error: err instanceof Error ? err.message : String(err),
-          });
-          rejectOnce(err);
-        }
+    if (!isValid) {
+      logger.warn('Invalid row detected', {
+        source,
+        runId,
+        originalId: originalId || '(missing)',
+        errors: validationErrors,
       });
-  });
+    }
+
+    // ── Build document ────────────────────────────────────────────────────────
+    batch.push({
+      runId,
+      source,
+      originalId: originalId || `MISSING_ID_ROW_${result.totalRows}`,
+      timestamp: timestamp ?? null,
+      asset: asset ?? 'UNKNOWN',
+      amount: amount ?? '0',
+      type,
+      rawData: rawRow,
+      ingestionStatus: isValid ? IngestionStatus.VALID : IngestionStatus.INVALID,
+      validationErrors,
+    });
+
+    isValid ? result.validRows++ : result.invalidRows++;
+
+    // ── Flush batch ───────────────────────────────────────────────────────────
+    // Because we're inside `for await`, this await properly pauses the stream
+    // until the insert completes — no concurrent writes, no lost data.
+    if (batch.length >= BATCH_SIZE) {
+      const toInsert = batch.splice(0, BATCH_SIZE);
+      await TransactionModel.insertMany(toInsert, { ordered: false });
+    }
+  }
+
+  // Flush remaining rows that didn't fill a complete batch
+  if (batch.length > 0) {
+    await TransactionModel.insertMany(batch, { ordered: false });
+  }
+
+  logger.info('CSV ingestion complete', { source, runId, ...result });
 
   return result;
 }
