@@ -1,0 +1,19 @@
+{
+  "name": "@repo/logger",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "winston": "^3.13.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.5"
+  }
+}
