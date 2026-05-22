@@ -39,7 +39,7 @@ export async function ingestCsv(
   const seenIds = new Set<string>();
 
   await new Promise<void>((resolve, reject) => {
-    const stream = Readable.from(csvBuffer);
+    const stream = Readable.from([csvBuffer]);
 
     stream
       .pipe(
