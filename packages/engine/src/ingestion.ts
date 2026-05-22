@@ -91,7 +91,7 @@ export async function ingestCsv(
           validationErrors.push(`Negative quantity is invalid: "${amount}"`);
         }
 
-        const type = rawType ? normalizeType(rawType) : null;
+        const type = normalizeType(rawType);
         // We don't fail on unknown type — UNKNOWN is a valid enum value
 
         const isValid = validationErrors.length === 0;
