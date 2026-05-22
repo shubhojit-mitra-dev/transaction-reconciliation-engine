@@ -124,7 +124,11 @@ export async function ingestCsv(
         // ── Flush batch ──────────────────────────────────────────────────────
         if (batch.length >= BATCH_SIZE) {
           const toInsert = batch.splice(0, BATCH_SIZE);
-          await TransactionModel.insertMany(toInsert, { ordered: false });
+          try {
+            await TransactionModel.insertMany(toInsert, { ordered: false });
+          } catch (err) {
+            reject(err);
+          }
         }
       })
       .on('error', (err) => {
@@ -132,18 +136,22 @@ export async function ingestCsv(
         reject(err);
       })
       .on('end', async () => {
-        // Flush remaining rows
-        if (batch.length > 0) {
-          await TransactionModel.insertMany(batch, { ordered: false });
+        try {
+          // Flush remaining rows
+          if (batch.length > 0) {
+            await TransactionModel.insertMany(batch, { ordered: false });
+          }
+
+          logger.info('CSV ingestion complete', {
+            source,
+            runId,
+            ...result,
+          });
+
+          resolve();
+        } catch (err) {
+          reject(err);
         }
-
-        logger.info('CSV ingestion complete', {
-          source,
-          runId,
-          ...result,
-        });
-
-        resolve();
       });
   });
 
