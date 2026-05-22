@@ -68,9 +68,14 @@ export function normalizeType(raw: string): TransactionType {
   return TYPE_MAP[key] ?? TransactionType.UNKNOWN;
 }
 
+const UPPER_A = 65;
+const UPPER_Z = 90;
+const LOWER_A = 97;
+const LOWER_Z = 122;
+
 function isAsciiLetter(char: string): boolean {
   const code = char.charCodeAt(0);
-  return (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
+  return (code >= UPPER_A && code <= UPPER_Z) || (code >= LOWER_A && code <= LOWER_Z);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -91,6 +96,8 @@ export function normalizeAmount(raw: string): string | null {
     .replace(/[$€£¥]/g, '') // strip currency symbols
     .trim();
 
+  // Strip 3+ letter currency codes from the boundaries (for example, "USD 123.45"
+  // or "123.45 EUR") while leaving scientific notation like "1.23e-5" intact.
   let leadingLetters = 0;
   while (leadingLetters < cleaned.length && isAsciiLetter(cleaned[leadingLetters])) {
     leadingLetters += 1;
