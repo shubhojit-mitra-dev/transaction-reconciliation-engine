@@ -1,4 +1,5 @@
 import { TransactionType } from '@repo/types';
+import Decimal from 'decimal.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Asset Normalization
@@ -82,15 +83,22 @@ export function normalizeType(raw: string): TransactionType {
 export function normalizeAmount(raw: string): string | null {
   const cleaned = raw
     .trim()
+    .replace(/^[A-Za-z]{3,}\s*/, '') // strip leading currency codes
+    .replace(/\s*[A-Za-z]{3,}$/, '') // strip trailing currency codes
     .replace(/[$€£¥]/g, '')  // strip currency symbols
     .replace(/,/g, '')         // strip thousands separators
     .trim();
 
-  if (cleaned === '' || isNaN(Number(cleaned))) {
+  if (cleaned === '') {
     return null;
   }
 
-  return cleaned;
+  try {
+    new Decimal(cleaned);
+    return cleaned;
+  } catch {
+    return null;
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
