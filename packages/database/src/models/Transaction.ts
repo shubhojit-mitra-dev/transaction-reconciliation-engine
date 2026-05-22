@@ -39,8 +39,8 @@ const TransactionSchema = new Schema<TransactionDocument>(
     },
     type: {
       type: String,
-      enum: [...Object.values(TransactionType), null],
-      default: null,
+      enum: Object.values(TransactionType),
+      default: TransactionType.UNKNOWN,
     },
     rawData: {
       type: Schema.Types.Mixed,
@@ -70,7 +70,6 @@ TransactionSchema.index({ runId: 1, source: 1, asset: 1, timestamp: 1 });
 // Secondary: fetch all valid transactions for a run by source
 TransactionSchema.index({ runId: 1, source: 1, ingestionStatus: 1 });
 
-export const TransactionModel: Model<TransactionDocument> = mongoose.model<TransactionDocument>(
-  'Transaction',
-  TransactionSchema,
-);
+export const TransactionModel: Model<TransactionDocument> =
+  (mongoose.models.Transaction as Model<TransactionDocument> | undefined) ??
+  mongoose.model<TransactionDocument>('Transaction', TransactionSchema);
