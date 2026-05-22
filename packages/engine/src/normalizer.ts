@@ -68,6 +68,11 @@ export function normalizeType(raw: string): TransactionType {
   return TYPE_MAP[key] ?? TransactionType.UNKNOWN;
 }
 
+function isAsciiLetter(char: string): boolean {
+  const code = char.charCodeAt(0);
+  return (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Amount Normalization
 // ─────────────────────────────────────────────────────────────────────────────
@@ -81,13 +86,30 @@ export function normalizeType(raw: string): TransactionType {
  * Returns null if the value is empty or non-numeric after cleaning.
  */
 export function normalizeAmount(raw: string): string | null {
-  const cleaned = raw
+  let cleaned = raw
     .trim()
-    .replace(/^[A-Za-z]{3,}\s*/, '') // strip leading currency codes
-    .replace(/\s*[A-Za-z]{3,}$/, '') // strip trailing currency codes
-    .replace(/[$€£¥]/g, '')  // strip currency symbols
-    .replace(/,/g, '')         // strip thousands separators
+    .replace(/[$€£¥]/g, '') // strip currency symbols
     .trim();
+
+  let leadingLetters = 0;
+  while (leadingLetters < cleaned.length && isAsciiLetter(cleaned[leadingLetters])) {
+    leadingLetters += 1;
+  }
+
+  if (leadingLetters >= 3) {
+    cleaned = cleaned.slice(leadingLetters).trim();
+  }
+
+  let trailingStart = cleaned.length;
+  while (trailingStart > 0 && isAsciiLetter(cleaned[trailingStart - 1])) {
+    trailingStart -= 1;
+  }
+
+  if (cleaned.length - trailingStart >= 3) {
+    cleaned = cleaned.slice(0, trailingStart).trim();
+  }
+
+  cleaned = cleaned.replace(/,/g, '').trim(); // strip thousands separators
 
   if (cleaned === '') {
     return null;
