@@ -73,7 +73,11 @@ const UPPER_Z = 90;
 const LOWER_A = 97;
 const LOWER_Z = 122;
 
-function isAsciiLetter(char: string): boolean {
+function isAsciiLetter(char?: string): boolean {
+  if (!char) {
+    return false;
+  }
+
   const code = char.charCodeAt(0);
   return (code >= UPPER_A && code <= UPPER_Z) || (code >= LOWER_A && code <= LOWER_Z);
 }
