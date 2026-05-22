@@ -40,16 +40,34 @@ export async function ingestCsv(
 
   await new Promise<void>((resolve, reject) => {
     const stream = Readable.from([csvBuffer]);
+    const parser = parse({
+      columns: true,        // Use first row as column names
+      skip_empty_lines: true,
+      trim: true,           // Trim whitespace from all values
+      relax_column_count: true, // Don't throw on rows with mismatched column count
+    });
+    let isSettled = false;
+
+    const rejectOnce = (err: unknown) => {
+      if (isSettled) {
+        return;
+      }
+
+      isSettled = true;
+      reject(err);
+    };
+
+    const resolveOnce = () => {
+      if (isSettled) {
+        return;
+      }
+
+      isSettled = true;
+      resolve();
+    };
 
     stream
-      .pipe(
-        parse({
-          columns: true,        // Use first row as column names
-          skip_empty_lines: true,
-          trim: true,           // Trim whitespace from all values
-          relax_column_count: true, // Don't throw on rows with mismatched column count
-        }),
-      )
+      .pipe(parser)
       .on('data', async (rawRow: RawTransactionRow) => {
         result.totalRows++;
 
@@ -127,13 +145,14 @@ export async function ingestCsv(
           try {
             await TransactionModel.insertMany(toInsert, { ordered: false });
           } catch (err) {
-            reject(err);
+            rejectOnce(err);
+            parser.destroy(err instanceof Error ? err : new Error(String(err)));
           }
         }
       })
       .on('error', (err) => {
         logger.error('CSV parse error', { source, runId, error: err.message });
-        reject(err);
+        rejectOnce(err);
       })
       .on('end', async () => {
         try {
@@ -148,9 +167,9 @@ export async function ingestCsv(
             ...result,
           });
 
-          resolve();
+          resolveOnce();
         } catch (err) {
-          reject(err);
+          rejectOnce(err);
         }
       });
   });
