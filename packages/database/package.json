@@ -1,0 +1,21 @@
+{
+  "name": "@repo/database",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "eslint src/ --ext .ts"
+  },
+  "dependencies": {
+    "@repo/logger": "workspace:*",
+    "@repo/types": "workspace:*",
+    "mongoose": "^8.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.5"
+  }
+}
