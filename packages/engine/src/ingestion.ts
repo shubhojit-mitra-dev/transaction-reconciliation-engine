@@ -145,6 +145,11 @@ export async function ingestCsv(
           try {
             await TransactionModel.insertMany(toInsert, { ordered: false });
           } catch (err) {
+            logger.error('CSV batch insert error', {
+              source,
+              runId,
+              error: err instanceof Error ? err.message : String(err),
+            });
             rejectOnce(err);
             parser.destroy(err instanceof Error ? err : new Error(String(err)));
           }
@@ -169,6 +174,11 @@ export async function ingestCsv(
 
           resolveOnce();
         } catch (err) {
+          logger.error('CSV ingestion final batch insert error', {
+            source,
+            runId,
+            error: err instanceof Error ? err.message : String(err),
+          });
           rejectOnce(err);
         }
       });
