@@ -28,7 +28,7 @@ const TransactionSchema = new Schema<TransactionDocument>(
     },
     asset: {
       type: String,
-      default: null,
+      required: true,
       // uppercase: true is not a mongoose option; normalization happens in the engine layer
     },
     // Stored as String to avoid IEEE-754 floating-point precision loss.
