@@ -66,8 +66,9 @@ function timestampDiffSeconds(a: Date, b: Date): number {
  * Algorithm:
  *   1. Load all VALID transactions for the run from MongoDB (2 queries total).
  *   2. Build an in-memory index of exchange transactions, keyed by (asset, type).
- *      Exchange transactions are also indexed under their perspective counterpart
- *      so USER TRANSFER_OUT candidates include EXCHANGE TRANSFER_IN entries.
+ *      If a perspective counterpart exists, index the exchange transaction only
+ *      under that counterpart key (e.g., EXCHANGE TRANSFER_IN under TRANSFER_OUT).
+ *      Otherwise, index under its own type.
  *   3. For each valid USER transaction, find the best exchange candidate:
  *      - Must be within the timestamp tolerance window
  *      - Must not already be matched (1-to-1 guarantee via matchedExchangeIds Set)
@@ -120,25 +121,17 @@ export async function runMatcher(
 
   // ── Step 2: Build exchange index ───────────────────────────────────────────
   // Map<indexKey, LeanTransaction[]>
-  // Each exchange transaction is indexed under its own type key AND its
-  // perspective counterpart key so user-side lookups find it in either case.
+  // Each exchange transaction is indexed under its perspective counterpart key
+  // when applicable; otherwise, under its own type key.
   const exchangeIndex = new Map<string, LeanTransaction[]>();
 
   for (const tx of validExchangeTxs) {
     const type = tx.type as TransactionType;
-
-    // Index under own type
-    const ownKey = buildIndexKey(tx.asset, type);
-    if (!exchangeIndex.has(ownKey)) exchangeIndex.set(ownKey, []);
-    exchangeIndex.get(ownKey)!.push(tx);
-
-    // Index under perspective counterpart (if applicable)
     const counterpart = PERSPECTIVE_COUNTERPART[type];
-    if (counterpart) {
-      const flipKey = buildIndexKey(tx.asset, counterpart);
-      if (!exchangeIndex.has(flipKey)) exchangeIndex.set(flipKey, []);
-      exchangeIndex.get(flipKey)!.push(tx);
-    }
+    const indexType = counterpart ?? type;
+    const indexKey = buildIndexKey(tx.asset, indexType);
+    if (!exchangeIndex.has(indexKey)) exchangeIndex.set(indexKey, []);
+    exchangeIndex.get(indexKey)!.push(tx);
   }
 
   // ── Step 3: Match valid user transactions ──────────────────────────────────
