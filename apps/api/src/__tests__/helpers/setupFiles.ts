@@ -2,10 +2,20 @@ import { beforeAll, beforeEach } from 'vitest';
 import mongoose from 'mongoose';
 import { connectDatabase } from '@repo/database';
 
-const MONGODB_URI = process.env['MONGODB_URI'];
+// Give each Vitest worker its own database so parallel files cannot interfere.
+const workerId = process.env['VITEST_POOL_ID'] ?? '0';
+const MONGODB_BASE_URI =
+  process.env['MONGODB_URI'] ?? 'mongodb://localhost:27017/reconciliation_test';
+
+// Replace the database name with a worker-scoped one.
+// e.g. mongodb://localhost:27017/reconciliation_test  →  reconciliation_test_0
+const MONGODB_URI = MONGODB_BASE_URI.replace(
+  /\/([^/?]+)(\?|$)/,
+  `/reconciliation_test_${workerId}$2`,
+);
 
 beforeAll(async () => {
-  if (!MONGODB_URI?.trim()) {
+  if (!MONGODB_BASE_URI.trim()) {
     throw new Error('MONGODB_URI is not set in API test env.');
   }
   if (mongoose.connection.readyState === 0) {

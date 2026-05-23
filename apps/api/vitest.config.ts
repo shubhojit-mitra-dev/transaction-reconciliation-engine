@@ -9,13 +9,6 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    // Run test files sequentially to prevent parallel DB interference
-    pool: 'forks',
-    poolOptions: {
-      forks: {
-        singleFork: true,
-      },
-    },
     setupFiles: ['./src/__tests__/helpers/setupFiles.ts'],
     server: {
       deps: {
