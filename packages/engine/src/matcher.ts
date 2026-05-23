@@ -39,11 +39,12 @@ function buildIndexKey(asset: string, type: TransactionType): string {
 /**
  * Calculates the absolute percentage difference between two decimal amounts.
  * Uses Decimal.js to avoid IEEE-754 precision errors.
- * Returns Infinity if the base amount is zero.
+ * Returns 0 if both amounts are zero, Infinity if only the base amount is zero.
  */
 function quantityDiffPct(a: string, b: string): number {
   const decA = new Decimal(a);
   const decB = new Decimal(b);
+  if (decA.isZero() && decB.isZero()) return 0;
   if (decA.isZero()) return Infinity;
   return decA.minus(decB).abs().div(decA).times(100).toNumber();
 }
