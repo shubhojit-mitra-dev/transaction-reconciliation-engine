@@ -2,7 +2,7 @@ import { beforeAll, beforeEach } from 'vitest';
 import mongoose from 'mongoose';
 import { connectDatabase } from '@repo/database';
 
-const MONGODB_URI = process.env['MONGODB_URI'] ?? '';
+const MONGODB_URI = process.env['MONGODB_URI'];
 
 /**
  * Connect to MongoDB once per test file, inside the fork that actually
@@ -10,6 +10,12 @@ const MONGODB_URI = process.env['MONGODB_URI'] ?? '';
  * mongoose connection is NOT inherited by forked workers.
  */
 beforeAll(async () => {
+  if (!MONGODB_URI?.trim()) {
+    throw new Error(
+      'MONGODB_URI is not set. Make sure .env.test is present and dotenv is loaded in vitest.config.ts',
+    );
+  }
+
   // readyState 0 = disconnected — only connect if we haven't already
   if (mongoose.connection.readyState === 0) {
     await connectDatabase(MONGODB_URI);
@@ -26,4 +32,3 @@ beforeEach(async () => {
   const collections = await db.collections();
   await Promise.all(collections.map((col) => col.deleteMany({})));
 });
-
