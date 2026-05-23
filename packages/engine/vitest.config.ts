@@ -22,5 +22,12 @@ export default defineConfig({
       },
     },
     testTimeout: 15000,
+    server: {
+      deps: {
+        // Vite-node must not attempt to bundle native Node.js / CJS packages.
+        // Tell it to load them directly via Node's require() instead.
+        external: [/node_modules/],
+      },
+    },
   },
 });
