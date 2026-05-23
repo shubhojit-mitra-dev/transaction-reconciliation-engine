@@ -35,7 +35,11 @@ reportRouter.get('/:runId', async (req: Request, res: Response) => {
 
   try {
     const [data, total] = await Promise.all([
-      ReconciliationResultModel.find({ runId }).skip(skip).limit(limit).lean(),
+      ReconciliationResultModel.find({ runId })
+        .sort({ createdAt: 1, _id: 1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
       ReconciliationResultModel.countDocuments({ runId }),
     ]);
 
