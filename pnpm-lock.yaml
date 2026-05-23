@@ -67,6 +67,9 @@ importers:
       dotenv:
         specifier: ^16.4.5
         version: 16.6.1
+      mongoose:
+        specifier: ^8.4.1
+        version: 8.24.0
       typescript:
         specifier: ^5.4.5
         version: 5.9.3
