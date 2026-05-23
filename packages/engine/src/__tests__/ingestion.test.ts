@@ -29,7 +29,7 @@ const CSV_WITH_INVALID_ROWS = Buffer.from(
     'transaction_id,timestamp,type,asset,quantity,price_usd,fee,note',
     // Valid row
     'USR-010,2024-03-05T15:00:00Z,BUY,ETH,1.5,3500.00,0.0015,',
-    // Missing timestamp
+    // Malformed timestamp
     'USR-018,2024-03-09T,SELL,ETH,0.3,3510.00,0.0003,Malformed timestamp',
     // Negative quantity
     'USR-019,2024-03-10T08:00:00Z,BUY,BTC,-0.1,62000.00,0.0001,Negative qty',
