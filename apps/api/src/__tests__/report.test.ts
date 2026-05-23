@@ -1,14 +1,14 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import { app } from '../app';
 import { ReconciliationRunModel, ReconciliationResultModel } from '@repo/database';
-import { ReconciliationStatus, MatchStatus, TransactionSource } from '@repo/types';
+import { ReconciliationStatus, MatchStatus } from '@repo/types';
 
 describe('GET /report endpoints', () => {
   let runId: string;
 
-  beforeAll(async () => {
-    // Seed database with a fake run and results
+  beforeEach(async () => {
+    // Re-seed on every test because the global beforeEach in setupFiles wipes all collections
     const run = await ReconciliationRunModel.create({
       status: ReconciliationStatus.COMPLETED,
       config: { quantityTolerancePct: 0.01, timestampToleranceSeconds: 60 },
