@@ -4,6 +4,7 @@ import helmet from 'helmet';
 
 import { executeReconciliation } from '@repo/engine';
 import multer from 'multer';
+import { reportRouter } from './routes/report';
 
 const app: Express = express();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -51,5 +52,7 @@ app.post(
     }
   }
 );
+
+app.use('/report', reportRouter);
 
 export { app };
