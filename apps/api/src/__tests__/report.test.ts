@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import request from 'supertest';
 import { app } from '../app';
 import { ReconciliationRunModel, ReconciliationResultModel } from '@repo/database';
-import { ReconciliationStatus, ResultStatus, TransactionSource } from '@repo/types';
+import { ReconciliationStatus, MatchStatus, TransactionSource } from '@repo/types';
 
 describe('GET /report endpoints', () => {
   let runId: string;
@@ -11,21 +11,21 @@ describe('GET /report endpoints', () => {
     // Seed database with a fake run and results
     const run = await ReconciliationRunModel.create({
       status: ReconciliationStatus.COMPLETED,
-      config: { quantityTolerance: 0.01, timestampToleranceMs: 60000 },
+      config: { quantityTolerancePct: 0.01, timestampToleranceSeconds: 60 },
     });
     runId = String(run._id);
 
     await ReconciliationResultModel.create([
       {
         runId,
-        status: ResultStatus.MATCHED,
+        status: MatchStatus.MATCHED,
         userTransactionId: 'u1',
         exchangeTransactionId: 'e1',
         reason: 'Exact match',
       },
       {
         runId,
-        status: ResultStatus.UNMATCHED_USER,
+        status: MatchStatus.UNMATCHED_USER,
         userTransactionId: 'u2',
         reason: 'No exchange transaction found',
       },
@@ -65,7 +65,7 @@ describe('GET /report endpoints', () => {
       
       expect(res.status).toBe(200);
       expect(res.body.data.length).toBe(1);
-      expect(res.body.data[0].status).toBe(ResultStatus.UNMATCHED_USER);
+      expect(res.body.data[0].status).toBe(MatchStatus.UNMATCHED_USER);
     });
   });
 });
