@@ -46,6 +46,11 @@ describe('GET /report endpoints', () => {
       const res = await request(app).get('/report/invalid-id');
       expect(res.status).toBe(400); // Bad Request for invalid mongo ObjectId
     });
+
+    it('should return 404 for a valid but non-existent runId', async () => {
+      const res = await request(app).get('/report/507f1f77bcf86cd799439011');
+      expect(res.status).toBe(404);
+    });
   });
 
   describe('GET /report/:runId/summary', () => {
@@ -66,6 +71,11 @@ describe('GET /report endpoints', () => {
       expect(res.status).toBe(200);
       expect(res.body.data.length).toBe(1);
       expect(res.body.data[0].status).toBe(MatchStatus.UNMATCHED_USER);
+    });
+
+    it('should return 404 for a valid but non-existent runId', async () => {
+      const res = await request(app).get('/report/507f1f77bcf86cd799439011/unmatched');
+      expect(res.status).toBe(404);
     });
   });
 });

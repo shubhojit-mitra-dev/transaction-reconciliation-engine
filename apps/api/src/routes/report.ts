@@ -17,6 +17,15 @@ function validateRunId(runId: string, res: Response): boolean {
   return true;
 }
 
+async function ensureRunExists(runId: string, res: Response): Promise<boolean> {
+  const exists = await ReconciliationRunModel.exists({ _id: runId });
+  if (!exists) {
+    res.status(404).json({ error: 'Run not found' });
+    return false;
+  }
+  return true;
+}
+
 /**
  * GET /report/:runId
  * Returns a paginated list of all reconciliation results for a given run.
@@ -25,15 +34,17 @@ reportRouter.get('/:runId', async (req: Request, res: Response) => {
   const { runId } = req.params;
   if (!validateRunId(runId, res)) return;
 
-  const pageParam = parseInt(String(req.query.page ?? '1'), 10);
-  const limitParam = parseInt(String(req.query.limit ?? '20'), 10);
-
-  const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
-  const limitRaw = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : 20;
-  const limit = Math.min(100, limitRaw);
-  const skip = (page - 1) * limit;
-
   try {
+    if (!(await ensureRunExists(runId, res))) return;
+
+    const pageParam = parseInt(String(req.query.page ?? '1'), 10);
+    const limitParam = parseInt(String(req.query.limit ?? '20'), 10);
+
+    const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
+    const limitRaw = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : 20;
+    const limit = Math.min(100, limitRaw);
+    const skip = (page - 1) * limit;
+
     const [data, total] = await Promise.all([
       ReconciliationResultModel.find({ runId })
         .sort({ createdAt: 1, _id: 1 })
@@ -102,6 +113,8 @@ reportRouter.get('/:runId/unmatched', async (req: Request, res: Response) => {
   if (!validateRunId(runId, res)) return;
 
   try {
+    if (!(await ensureRunExists(runId, res))) return;
+
     const pageParam = parseInt(String(req.query.page ?? '1'), 10);
     const limitParam = parseInt(String(req.query.limit ?? '20'), 10);
 
