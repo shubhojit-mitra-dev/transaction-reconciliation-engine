@@ -1,6 +1,12 @@
 import Decimal from 'decimal.js';
 import mongoose from 'mongoose';
-import { TransactionType, MatchStatus, ReconciliationConfig } from '@repo/types';
+import {
+  TransactionType,
+  MatchStatus,
+  ReconciliationConfig,
+  TransactionSource,
+  IngestionStatus,
+} from '@repo/types';
 import { TransactionDocument, TransactionModel, ReconciliationResultModel } from '@repo/database';
 import { logger } from '@repo/logger';
 
@@ -81,10 +87,26 @@ export async function runMatcher(
 
   // ── Step 1: Load transactions ──────────────────────────────────────────────
   const [validUserTxs, validExchangeTxs, invalidUserTxs, invalidExchangeTxs] = await Promise.all([
-    TransactionModel.find({ runId, source: 'USER', ingestionStatus: 'VALID' }).lean(),
-    TransactionModel.find({ runId, source: 'EXCHANGE', ingestionStatus: 'VALID' }).lean(),
-    TransactionModel.find({ runId, source: 'USER', ingestionStatus: 'INVALID' }).lean(),
-    TransactionModel.find({ runId, source: 'EXCHANGE', ingestionStatus: 'INVALID' }).lean(),
+    TransactionModel.find({
+      runId,
+      source: TransactionSource.USER,
+      ingestionStatus: IngestionStatus.VALID,
+    }).lean(),
+    TransactionModel.find({
+      runId,
+      source: TransactionSource.EXCHANGE,
+      ingestionStatus: IngestionStatus.VALID,
+    }).lean(),
+    TransactionModel.find({
+      runId,
+      source: TransactionSource.USER,
+      ingestionStatus: IngestionStatus.INVALID,
+    }).lean(),
+    TransactionModel.find({
+      runId,
+      source: TransactionSource.EXCHANGE,
+      ingestionStatus: IngestionStatus.INVALID,
+    }).lean(),
   ]);
 
   logger.info('Transactions loaded', {
