@@ -259,8 +259,11 @@ describe('runMatcher — integration', () => {
       await runMatcher(RUN_ID, BASE_CONFIG);
 
       const results = await getResults();
-      // 1 MATCHED + 1 UNMATCHED_USER + 1 exchange result already consumed = 3 total
-      expect(results).toHaveLength(3);
+      // USR-001 → MATCHED (EXC-1001 consumed)
+      // USR-002 → UNMATCHED_USER (EXC-1001 already in matchedExchangeIds, eligible.length === 0)
+      // EXC-1001 → skipped in step 4 because it was consumed — no UNMATCHED_EXCHANGE entry
+      // Total: 2 results
+      expect(results).toHaveLength(2);
     });
   });
 
