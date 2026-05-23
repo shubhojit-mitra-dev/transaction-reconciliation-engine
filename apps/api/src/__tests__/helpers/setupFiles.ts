@@ -16,7 +16,10 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  const collections = Object.values(mongoose.connection.collections);
+  const db = mongoose.connection.db;
+  if (!db) return;
+
+  const collections = await db.collections();
   await Promise.all(collections.map((col) => col.deleteMany({})));
 });
 
