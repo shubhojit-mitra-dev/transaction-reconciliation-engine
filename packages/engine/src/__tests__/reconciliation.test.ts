@@ -58,7 +58,7 @@ describe('executeReconciliation — end-to-end', () => {
     });
 
     it('flags the known invalid rows in the user CSV', async () => {
-      // user CSV has 3 known bad rows: USR-001 duplicate, USR-018 bad timestamp, USR-019 negative qty, USR-024 missing timestamp
+      // user CSV has 4 known bad rows: USR-001 duplicate, USR-018 bad timestamp, USR-019 negative qty, USR-024 missing timestamp
       const response = await executeReconciliation({ userCsvBuffer, exchangeCsvBuffer });
 
       const invalidUser = await TransactionModel.countDocuments({
