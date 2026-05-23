@@ -18,7 +18,7 @@ describe('POST /reconcile', () => {
     
     expect(res.status).toBe(200);
     expect(res.body).toHaveProperty('runId');
-    expect(res.body).toHaveProperty('status', 'RUNNING'); // Or COMPLETED if synchronous
+    expect(res.body).toHaveProperty('status', 'COMPLETED');
   });
 
   it('should return 400 if files are missing', async () => {
