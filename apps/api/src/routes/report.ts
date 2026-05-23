@@ -102,12 +102,32 @@ reportRouter.get('/:runId/unmatched', async (req: Request, res: Response) => {
   if (!validateRunId(runId, res)) return;
 
   try {
-    const data = await ReconciliationResultModel.find({
+    const pageParam = parseInt(String(req.query.page ?? '1'), 10);
+    const limitParam = parseInt(String(req.query.limit ?? '20'), 10);
+
+    const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
+    const limitRaw = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : 20;
+    const limit = Math.min(100, limitRaw);
+    const skip = (page - 1) * limit;
+
+    const filter = {
       runId,
       status: { $in: [MatchStatus.UNMATCHED_USER, MatchStatus.UNMATCHED_EXCHANGE] },
-    }).lean();
+    };
 
-    res.status(200).json({ data });
+    const [data, total] = await Promise.all([
+      ReconciliationResultModel.find(filter)
+        .sort({ createdAt: 1, _id: 1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      ReconciliationResultModel.countDocuments(filter),
+    ]);
+
+    res.status(200).json({
+      data,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    });
   } catch {
     res.status(500).json({ error: 'Failed to retrieve unmatched results' });
   }
