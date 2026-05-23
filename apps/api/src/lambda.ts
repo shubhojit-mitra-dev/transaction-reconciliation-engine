@@ -12,6 +12,7 @@ if (!MONGODB_URI?.trim()) {
 // Connect to DB once when the lambda container is initialized (Cold Start)
 connectDatabase(MONGODB_URI).catch((err) => {
   logger.error('Failed to connect to database during Lambda init', { error: err });
+  throw err;
 });
 
 export const handler = serverless(app);
