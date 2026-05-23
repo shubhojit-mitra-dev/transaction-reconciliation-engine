@@ -5,6 +5,14 @@ const DEFAULTS: ReconciliationConfig = {
   quantityTolerancePct: 0.01,     // ±0.01%
 };
 
+function isValidTimestampTolerance(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0;
+}
+
+function isValidQuantityTolerance(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0;
+}
+
 /**
  * Resolves the final ReconciliationConfig for a run.
  *
@@ -21,16 +29,34 @@ export function resolveConfig(overrides?: Partial<ReconciliationConfig>): Reconc
 
   if (process.env['TIMESTAMP_TOLERANCE_SECONDS']) {
     const parsed = Number(process.env['TIMESTAMP_TOLERANCE_SECONDS']);
-    if (!isNaN(parsed) && parsed > 0) {
+    if (isValidTimestampTolerance(parsed)) {
       fromEnv.timestampToleranceSeconds = parsed;
     }
   }
 
   if (process.env['QUANTITY_TOLERANCE_PCT']) {
     const parsed = Number(process.env['QUANTITY_TOLERANCE_PCT']);
-    if (!isNaN(parsed) && parsed >= 0) {
+    if (isValidQuantityTolerance(parsed)) {
       fromEnv.quantityTolerancePct = parsed;
     }
+  }
+
+  if (
+    overrides?.timestampToleranceSeconds !== undefined &&
+    !isValidTimestampTolerance(overrides.timestampToleranceSeconds)
+  ) {
+    throw new Error(
+      'Invalid config override: timestampToleranceSeconds must be a finite number greater than 0',
+    );
+  }
+
+  if (
+    overrides?.quantityTolerancePct !== undefined &&
+    !isValidQuantityTolerance(overrides.quantityTolerancePct)
+  ) {
+    throw new Error(
+      'Invalid config override: quantityTolerancePct must be a finite number greater than or equal to 0',
+    );
   }
 
   return {
