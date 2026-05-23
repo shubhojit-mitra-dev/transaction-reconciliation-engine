@@ -25,8 +25,12 @@ reportRouter.get('/:runId', async (req: Request, res: Response) => {
   const { runId } = req.params;
   if (!validateRunId(runId, res)) return;
 
-  const page = Math.max(1, parseInt(String(req.query.page ?? '1'), 10));
-  const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit ?? '20'), 10)));
+  const pageParam = parseInt(String(req.query.page ?? '1'), 10);
+  const limitParam = parseInt(String(req.query.limit ?? '20'), 10);
+
+  const page = Number.isFinite(pageParam) && pageParam > 0 ? pageParam : 1;
+  const limitRaw = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : 20;
+  const limit = Math.min(100, limitRaw);
   const skip = (page - 1) * limit;
 
   try {
