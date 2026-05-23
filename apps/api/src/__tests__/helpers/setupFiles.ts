@@ -6,7 +6,9 @@ const MONGODB_URI = process.env['MONGODB_URI'];
 
 beforeAll(async () => {
   if (!MONGODB_URI?.trim()) {
-    throw new Error('MONGODB_URI is not set in API test env.');
+    throw new Error(
+      'MONGODB_URI is not set. Make sure .env.test is present and dotenv is loaded in vitest.config.ts',
+    );
   }
   if (mongoose.connection.readyState === 0) {
     await connectDatabase(MONGODB_URI);
