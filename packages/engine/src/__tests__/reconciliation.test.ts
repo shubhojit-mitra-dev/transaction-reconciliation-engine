@@ -9,7 +9,7 @@ import { ReconciliationStatus, MatchStatus } from '@repo/types';
 // Load the real sample CSV files from the repo data/ directory
 // ─────────────────────────────────────────────────────────────────────────────
 
-const DATA_DIR = resolve(__dirname, '../../../../../data');
+const DATA_DIR = resolve(__dirname, '../../../../data');
 
 const userCsvBuffer = readFileSync(resolve(DATA_DIR, 'user_transactions.csv'));
 const exchangeCsvBuffer = readFileSync(resolve(DATA_DIR, 'exchange_transactions.csv'));
@@ -49,12 +49,12 @@ describe('executeReconciliation — end-to-end', () => {
 
   describe('Ingestion phase', () => {
     it('ingests all rows from both CSV files into the Transactions collection', async () => {
-      // user CSV has 27 data rows, exchange CSV has 26 data rows (headers excluded)
+      // user CSV: 26 data rows (USR-001..USR-025 + 1 duplicate USR-001)
+      // exchange CSV: 25 data rows (EXC-1001..EXC-1025)
       const response = await executeReconciliation({ userCsvBuffer, exchangeCsvBuffer });
 
       const count = await TransactionModel.countDocuments({ runId: response.runId });
-      // 27 user rows + 26 exchange rows = 53 total (including invalid ones)
-      expect(count).toBe(53);
+      expect(count).toBe(51);
     });
 
     it('flags the known invalid rows in the user CSV', async () => {
@@ -96,11 +96,30 @@ describe('executeReconciliation — end-to-end', () => {
     it('every transaction has exactly one result entry (complete coverage)', async () => {
       const response = await executeReconciliation({ userCsvBuffer, exchangeCsvBuffer });
 
-      const totalTransactions = await TransactionModel.countDocuments({ runId: response.runId });
-      const totalResults = await ReconciliationResultModel.countDocuments({ runId: response.runId });
+      // A MATCHED result covers one user tx AND one exchange tx in a single row,
+      // so totalResults !== totalTransactions. The correct invariant is:
+      //   - every user tx appears as userTransactionId in exactly one result
+      //   - every exchange tx appears as exchangeTransactionId in exactly one result
+      const userTxCount = await TransactionModel.countDocuments({
+        runId: response.runId,
+        source: 'USER',
+      });
+      const exchangeTxCount = await TransactionModel.countDocuments({
+        runId: response.runId,
+        source: 'EXCHANGE',
+      });
 
-      // Each transaction must appear in exactly one result row
-      expect(totalResults).toBe(totalTransactions);
+      const resultsWithUser = await ReconciliationResultModel.countDocuments({
+        runId: response.runId,
+        userTransactionId: { $ne: null },
+      });
+      const resultsWithExchange = await ReconciliationResultModel.countDocuments({
+        runId: response.runId,
+        exchangeTransactionId: { $ne: null },
+      });
+
+      expect(resultsWithUser).toBe(userTxCount);
+      expect(resultsWithExchange).toBe(exchangeTxCount);
     });
 
     it('produces CONFLICTING for EXC-1012 which has quantity 0.3001 vs user 0.3 (exceeds 0.01% tolerance)', async () => {
