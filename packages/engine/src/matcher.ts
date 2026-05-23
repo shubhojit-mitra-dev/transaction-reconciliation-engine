@@ -122,11 +122,9 @@ export async function runMatcher(
   // Each exchange transaction is indexed under its own type key AND its
   // perspective counterpart key so user-side lookups find it in either case.
   const exchangeIndex = new Map<string, LeanTransaction[]>();
-  const allExchangeIds = new Set<string>();
 
   for (const tx of validExchangeTxs) {
     const type = tx.type as TransactionType;
-    allExchangeIds.add(String(tx._id));
 
     // Index under own type
     const ownKey = buildIndexKey(tx.asset, type);
