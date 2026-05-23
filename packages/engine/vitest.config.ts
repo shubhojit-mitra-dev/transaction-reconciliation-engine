@@ -9,9 +9,8 @@ dotenv.config({ path: resolve(__dirname, '../../.env.test') });
 
 export default defineConfig({
   test: {
-    // Connect to MongoDB once before the suite and disconnect once after
-    globalSetup: './src/__tests__/helpers/globalSetup.ts',
-    // Wipe all collections before every individual test
+    // Wipe all collections and establish the DB connection before every test file.
+    // setupFiles runs inside the forked worker — the correct process for mongoose.
     setupFiles: ['./src/__tests__/helpers/setupFiles.ts'],
     // Run tests sequentially — integration tests share one DB connection
     // and sequential execution prevents inter-test interference
