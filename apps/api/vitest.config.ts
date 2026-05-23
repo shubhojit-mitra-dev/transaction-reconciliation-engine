@@ -12,7 +12,7 @@ export default defineConfig({
     setupFiles: ['./src/__tests__/helpers/setupFiles.ts'],
     server: {
       deps: {
-        external: ['mongoose'],
+        external: [/node_modules/],
       },
     },
   },
