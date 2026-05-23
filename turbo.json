@@ -10,6 +10,7 @@
     },
     "test": {
       "dependsOn": ["^build"],
+      "env": ["MONGODB_URI"],
       "cache": false
     },
     "dev": {
