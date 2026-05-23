@@ -54,6 +54,11 @@ export async function executeReconciliation(
     logger.info(`Starting ingestion phase`, { runId });
     const userResult = await ingestCsv(userCsvBuffer, TransactionSource.USER, runId);
     const exchangeResult = await ingestCsv(exchangeCsvBuffer, TransactionSource.EXCHANGE, runId);
+    logger.info(`Ingestion phase completed`, {
+      runId,
+      userIngestion: userResult,
+      exchangeIngestion: exchangeResult,
+    });
 
     // ── 3. Matching ────────────────────────────────────────────────────────────
     logger.info(`Starting matching phase`, { runId });
