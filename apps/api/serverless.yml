@@ -1,0 +1,28 @@
+service: reconciliation-engine-api
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: ${env:AWS_REGION, 'ap-south-1'}
+  stage: ${opt:stage, 'dev'}
+  environment:
+    MONGODB_URI: ${env:MONGODB_URI}
+    NODE_ENV: ${self:provider.stage}
+  apiGateway:
+    binaryMediaTypes:
+      - 'multipart/form-data'
+
+plugins:
+  - serverless-offline
+
+build:
+  esbuild:
+    bundle: true
+    minify: true
+    sourcemap: true
+
+functions:
+  api:
+    handler: src/lambda.handler
+    events:
+      - httpApi: '*'
