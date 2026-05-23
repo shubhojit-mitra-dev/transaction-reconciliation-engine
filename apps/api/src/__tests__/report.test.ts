@@ -42,7 +42,7 @@ describe('GET /report endpoints', () => {
       expect(res.body.pagination).toHaveProperty('total', 2);
     });
 
-    it('should return 404 for an invalid runId format', async () => {
+    it('should return 400 for an invalid runId format', async () => {
       const res = await request(app).get('/report/invalid-id');
       expect(res.status).toBe(400); // Bad Request for invalid mongo ObjectId
     });
