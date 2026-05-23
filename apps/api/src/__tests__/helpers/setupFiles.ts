@@ -1,6 +1,6 @@
-import { beforeAll, afterAll, beforeEach } from 'vitest';
+import { beforeAll, beforeEach } from 'vitest';
 import mongoose from 'mongoose';
-import { connectDatabase, disconnectDatabase } from '@repo/database';
+import { connectDatabase } from '@repo/database';
 
 const MONGODB_URI = process.env['MONGODB_URI'];
 
@@ -16,10 +16,4 @@ beforeAll(async () => {
 beforeEach(async () => {
   const collections = Object.values(mongoose.connection.collections);
   await Promise.all(collections.map((col) => col.deleteMany({})));
-});
-
-afterAll(async () => {
-  if (mongoose.connection.readyState !== 0) {
-    await disconnectDatabase();
-  }
 });
