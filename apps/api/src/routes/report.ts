@@ -18,7 +18,8 @@ function validateRunId(runId: string, res: Response): boolean {
 }
 
 async function ensureRunExists(runId: string, res: Response): Promise<boolean> {
-  const exists = await ReconciliationRunModel.exists({ _id: runId });
+  const oid = new mongoose.Types.ObjectId(runId);
+  const exists = await ReconciliationRunModel.exists({ _id: oid });
   if (!exists) {
     res.status(404).json({ error: 'Run not found' });
     return false;
