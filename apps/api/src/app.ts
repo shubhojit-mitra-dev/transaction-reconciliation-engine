@@ -59,15 +59,24 @@ app.post(
 
 app.use('/report', reportRouter);
 
-// Serve the raw swagger JSON
-app.get('/docs/swagger.json', (req, res) => {
-  res.json(swaggerDocument);
-});
+const isSwaggerDocsEnabled = process.env.NODE_ENV !== 'prod';
 
-// Serve the interactive Swagger UI
-// Splitting serve and setup is a known workaround for the serverless-offline infinite redirect loop
-app.use('/docs', swaggerUi.serve);
-app.get('/docs', swaggerUi.setup(swaggerDocument));
+if (isSwaggerDocsEnabled) {
+  app.use('/docs', (_req, res, next) => {
+    res.removeHeader('Content-Security-Policy');
+    next();
+  });
+
+  // Serve the raw swagger JSON
+  app.get('/docs/swagger.json', (_req, res) => {
+    res.json(swaggerDocument);
+  });
+
+  // Serve the interactive Swagger UI
+  // Splitting serve and setup is a known workaround for the serverless-offline infinite redirect loop
+  app.use('/docs', swaggerUi.serve);
+  app.get('/docs', swaggerUi.setup(swaggerDocument));
+}
 
 // Test-only route: triggers the global error handler to verify 500 behaviour.
 // Guard prevents this route from existing outside test runs.
