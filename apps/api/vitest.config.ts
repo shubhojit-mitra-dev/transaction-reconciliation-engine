@@ -10,9 +10,16 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     setupFiles: ['./src/__tests__/helpers/setupFiles.ts'],
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
+    },
+    testTimeout: 15000,
     server: {
       deps: {
-        external: ['mongoose'],
+        external: [/node_modules/],
       },
     },
   },

@@ -15,8 +15,10 @@ const MONGODB_URI = MONGODB_BASE_URI.replace(
 );
 
 beforeAll(async () => {
-  if (!MONGODB_BASE_URI.trim()) {
-    throw new Error('MONGODB_URI is not set in API test env.');
+  if (!MONGODB_URI?.trim()) {
+    throw new Error(
+      'MONGODB_URI is not set. Make sure .env.test is present and dotenv is loaded in vitest.config.ts',
+    );
   }
   if (mongoose.connection.readyState === 0) {
     await connectDatabase(MONGODB_URI);
@@ -24,6 +26,9 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
-  const collections = Object.values(mongoose.connection.collections);
+  const db = mongoose.connection.db;
+  if (!db) return;
+
+  const collections = await db.collections();
   await Promise.all(collections.map((col) => col.deleteMany({})));
 });
