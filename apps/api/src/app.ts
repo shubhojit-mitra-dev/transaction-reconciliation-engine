@@ -57,8 +57,8 @@ app.post(
 app.use('/report', reportRouter);
 
 // Test-only route: triggers the global error handler to verify 500 behaviour.
-// Guard prevents this route from existing in production.
-if (process.env.NODE_ENV !== 'production') {
+// Guard prevents this route from existing outside test runs.
+if (process.env.NODE_ENV === 'test') {
   app.get('/test-error', () => {
     throw new Error('Intentional test error');
   });
