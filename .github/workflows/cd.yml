@@ -41,6 +41,24 @@ jobs:
       - name: Run Linting and Tests (via Turborepo)
         run: pnpm turbo run lint test
 
+      - name: Ensure S3 Deployment Bucket Exists
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          BUCKET_NAME="reconciliation-engine-deploy-${ACCOUNT_ID}-${AWS_REGION}"
+          echo "DEPLOYMENT_BUCKET=${BUCKET_NAME}" >> $GITHUB_ENV
+          
+          # Check if bucket exists, if not create it
+          aws s3api head-bucket --bucket ${BUCKET_NAME} 2>/dev/null || \
+          if [ "${AWS_REGION}" = "us-east-1" ]; then
+            aws s3api create-bucket --bucket ${BUCKET_NAME} --region ${AWS_REGION}
+          else
+            aws s3api create-bucket --bucket ${BUCKET_NAME} --region ${AWS_REGION} --create-bucket-configuration LocationConstraint=${AWS_REGION}
+          fi
+
       - name: Deploy API with Serverless
         if: ${{ vars.ENABLE_LAMBDA_DEPLOY == 'true' }}
         env:
@@ -49,4 +67,5 @@ jobs:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           MONGODB_URI: ${{ secrets.MONGODB_URI }}
           SERVERLESS_ACCESS_KEY: ${{ secrets.SERVERLESS_ACCESS_KEY }}
+          DEPLOYMENT_BUCKET: ${{ env.DEPLOYMENT_BUCKET }}
         run: pnpm --filter @repo/api deploy:prod
