@@ -7,6 +7,9 @@ import multer from 'multer';
 import { reportRouter } from './routes/report';
 import { notFoundHandler, globalErrorHandler } from './middleware/errorHandler';
 
+import swaggerUi from 'swagger-ui-express';
+import swaggerDocument from './swagger.json';
+
 const app: Express = express();
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -55,6 +58,14 @@ app.post(
 );
 
 app.use('/report', reportRouter);
+
+// Serve the raw swagger JSON
+app.get('/docs/swagger.json', (req, res) => {
+  res.json(swaggerDocument);
+});
+
+// Serve the interactive Swagger UI
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Test-only route: triggers the global error handler to verify 500 behaviour.
 // Guard prevents this route from existing outside test runs.
