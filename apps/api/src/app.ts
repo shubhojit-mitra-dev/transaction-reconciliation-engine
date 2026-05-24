@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import { executeReconciliation } from '@repo/engine';
 import multer from 'multer';
 import { reportRouter } from './routes/report';
+import { notFoundHandler, globalErrorHandler } from './middleware/errorHandler';
 
 const app: Express = express();
 const upload = multer({ storage: multer.memoryStorage() });
@@ -54,5 +55,17 @@ app.post(
 );
 
 app.use('/report', reportRouter);
+
+// Test-only route: triggers the global error handler to verify 500 behaviour.
+// Guard prevents this route from existing in production.
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/test-error', () => {
+    throw new Error('Intentional test error');
+  });
+}
+
+// ── Error handling (must be mounted last) ────────────────────────────────────
+app.use(notFoundHandler);
+app.use(globalErrorHandler);
 
 export { app };
