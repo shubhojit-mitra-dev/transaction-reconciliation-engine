@@ -91,16 +91,16 @@ if (isSwaggerDocsEnabled) {
     res.redirect(301, '/docs/index.html');
   });
 
-  // 2. Intercept the HTML and Init JS requests. We use a response interceptor to replace
+  // 2. Intercept the HTML response. We use a response interceptor to replace
   // the hardcoded local asset paths (which esbuild doesn't bundle) with CDN links.
   app.use(
     '/docs',
     (req: express.Request, res: express.Response, next: express.NextFunction) => {
-      if (req.path === '/index.html' || req.path === '/swagger-ui-init.js') {
+      // We ONLY want to intercept the HTML generation.
+      if (req.path === '/index.html' || req.path === '/') {
         // Trick swaggerUi.setup into not doing its own internal redirects
         req.originalUrl = '/docs/';
         
-        // Intercept the HTML response to rewrite local paths to CDN
         const originalSend = res.send;
         res.send = function (body: any): express.Response {
           if (typeof body === 'string' && body.includes('swagger-ui-bundle.js')) {
@@ -120,6 +120,13 @@ if (isSwaggerDocsEnabled) {
               /href="\.\/favicon-.*?\.png"/g, 
               'href="data:image/x-icon;base64,"' // Prevent 404s for favicon
             );
+
+            // Inject an error catcher to display the crash on the screen
+            customized = customized.replace(
+              '<body>',
+              '<body><script>window.onerror = function(msg, src, ln, col, err) { document.body.innerHTML += "<div style=\\"color:red;padding:20px;z-index:9999;position:relative;background:white;\\"><b>ERROR:</b> " + msg + "<br>" + src + ":" + ln + "<br><pre>" + (err && err.stack) + "</pre></div>"; };</script>'
+            );
+
             return originalSend.call(this, customized);
           }
           return originalSend.call(this, body);
@@ -128,7 +135,8 @@ if (isSwaggerDocsEnabled) {
         return swaggerUi.setup(swaggerDocument)(req, res, next);
       }
       next();
-    }
+    },
+    swaggerUi.serve
   );
 }
 
