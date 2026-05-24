@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import { ReconciliationResultModel, ReconciliationRunModel } from '@repo/database';
 import { MatchStatus } from '@repo/types';
@@ -31,7 +31,7 @@ async function ensureRunExists(runId: string, res: Response): Promise<boolean> {
  * GET /report/:runId
  * Returns a paginated list of all reconciliation results for a given run.
  */
-reportRouter.get('/:runId', async (req: Request, res: Response) => {
+reportRouter.get('/:runId', async (req: Request, res: Response, next: NextFunction) => {
   const { runId } = req.params;
   if (!validateRunId(runId, res)) return;
 
@@ -59,8 +59,8 @@ reportRouter.get('/:runId', async (req: Request, res: Response) => {
       data,
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
-  } catch {
-    res.status(500).json({ error: 'Failed to retrieve report' });
+  } catch (error) {
+    next(error);
   }
 });
 
@@ -68,7 +68,7 @@ reportRouter.get('/:runId', async (req: Request, res: Response) => {
  * GET /report/:runId/summary
  * Returns aggregated metrics for the run.
  */
-reportRouter.get('/:runId/summary', async (req: Request, res: Response) => {
+reportRouter.get('/:runId/summary', async (req: Request, res: Response, next: NextFunction) => {
   const { runId } = req.params;
   if (!validateRunId(runId, res)) return;
 
@@ -100,8 +100,8 @@ reportRouter.get('/:runId/summary', async (req: Request, res: Response) => {
     }
 
     res.status(200).json({ runId, status: run.status, ...summary });
-  } catch {
-    res.status(500).json({ error: 'Failed to retrieve summary' });
+  } catch (error) {
+    next(error);
   }
 });
 
@@ -109,7 +109,7 @@ reportRouter.get('/:runId/summary', async (req: Request, res: Response) => {
  * GET /report/:runId/unmatched
  * Returns only unmatched transactions (UNMATCHED_USER or UNMATCHED_EXCHANGE).
  */
-reportRouter.get('/:runId/unmatched', async (req: Request, res: Response) => {
+reportRouter.get('/:runId/unmatched', async (req: Request, res: Response, next: NextFunction) => {
   const { runId } = req.params;
   if (!validateRunId(runId, res)) return;
 
@@ -142,8 +142,8 @@ reportRouter.get('/:runId/unmatched', async (req: Request, res: Response) => {
       data,
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
-  } catch {
-    res.status(500).json({ error: 'Failed to retrieve unmatched results' });
+  } catch (error) {
+    next(error);
   }
 });
 
