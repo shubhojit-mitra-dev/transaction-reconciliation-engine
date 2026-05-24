@@ -57,15 +57,15 @@
                     "format": "binary",
                     "description": "External exchange transaction ledger (CSV)"
                   },
-                  "quantityTolerance": {
+                  "quantityTolerancePct": {
                     "type": "number",
-                    "description": "Override for quantity tolerance (percentage)",
+                    "description": "Override for quantity tolerance percentage",
                     "example": 0.01
                   },
-                  "timestampTolerance": {
+                  "timestampToleranceSeconds": {
                     "type": "number",
-                    "description": "Override for timestamp tolerance (milliseconds)",
-                    "example": 60000
+                    "description": "Override for timestamp tolerance in seconds",
+                    "example": 60
                   }
                 },
                 "required": ["user_file", "exchange_file"]

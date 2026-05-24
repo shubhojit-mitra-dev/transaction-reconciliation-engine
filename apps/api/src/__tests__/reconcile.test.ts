@@ -11,8 +11,8 @@ describe('POST /reconcile', () => {
 
     const res = await request(app)
       .post('/reconcile')
-      .field('quantityTolerance', '0.01')
-      .field('timestampTolerance', '60000') // 1 minute in ms
+    .field('quantityTolerancePct', '0.01')
+    .field('timestampToleranceSeconds', '60')
       .attach('user_file', userCsvPath)
       .attach('exchange_file', exchangeCsvPath);
     
@@ -24,7 +24,7 @@ describe('POST /reconcile', () => {
   it('should return 400 if files are missing', async () => {
     const res = await request(app)
       .post('/reconcile')
-      .field('quantityTolerance', '0.01');
+      .field('quantityTolerancePct', '0.01');
       
     expect(res.status).toBe(400);
     expect(res.body).toHaveProperty('error');

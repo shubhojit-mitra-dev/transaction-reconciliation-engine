@@ -41,8 +41,12 @@ app.post(
 
       // Parse optional configuration from the form data
       const configOverrides: Record<string, number> = {};
-      if (req.body.quantityTolerance) configOverrides.quantityTolerance = parseFloat(req.body.quantityTolerance);
-      if (req.body.timestampTolerance) configOverrides.timestampToleranceMs = parseInt(req.body.timestampTolerance, 10);
+      if (req.body.quantityTolerancePct) {
+        configOverrides.quantityTolerancePct = parseFloat(req.body.quantityTolerancePct);
+      }
+      if (req.body.timestampToleranceSeconds) {
+        configOverrides.timestampToleranceSeconds = parseFloat(req.body.timestampToleranceSeconds);
+      }
 
       const result = await executeReconciliation({
         userCsvBuffer,
