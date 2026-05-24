@@ -1,0 +1,5 @@
+transaction_id,timestamp,type,asset,quantity,price_usd,fee,note
+USR_EXACT,2023-10-01T10:00:00Z,BUY,BTC,1.00,50000.00,0.01,This should be an EXACT match
+USR_TIME_FUZZY,2023-10-01T10:05:00Z,SELL,ETH,10.00,2000.00,0.05,This should be a FUZZY match due to 30s delay
+USR_QTY_FUZZY,2023-10-01T10:10:00Z,BUY,SOL,100.00,20.00,0.10,This should be a FUZZY match due to 0.5% quantity difference
+USR_UNMATCHED,2023-10-01T10:15:00Z,SELL,ADA,5000.00,0.50,5.00,This record only exists in User system
