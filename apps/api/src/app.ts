@@ -63,11 +63,15 @@ app.post(
 
 app.use('/report', reportRouter);
 
-const isSwaggerDocsEnabled = process.env.NODE_ENV !== 'prod';
+const nodeEnv = (process.env.NODE_ENV ?? '').toLowerCase();
+const isSwaggerDocsEnabled = nodeEnv !== 'prod' && nodeEnv !== 'production';
 
 if (isSwaggerDocsEnabled) {
   app.use('/docs', (_req, res, next) => {
-    res.removeHeader('Content-Security-Policy');
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'",
+    );
     next();
   });
 
