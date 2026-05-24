@@ -8,6 +8,7 @@ provider:
   environment:
     MONGODB_URI: ${env:MONGODB_URI}
     NODE_ENV: ${self:provider.stage}
+    ENABLE_SWAGGER: 'true'
   deploymentBucket:
     # Set dynamically by the CI/CD pipeline to ensure IAM least privilege compliance
     name: ${env:DEPLOYMENT_BUCKET}
