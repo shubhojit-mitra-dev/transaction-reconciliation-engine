@@ -77,14 +77,55 @@ if (isSwaggerDocsEnabled) {
   });
 
   // Serve the raw swagger JSON
-  app.get('/docs/swagger.json', (_req, res) => {
+  app.get('/docs/swagger.json', (req, res) => {
     res.json(swaggerDocument);
   });
 
-  // Serve the interactive Swagger UI
-  // Splitting serve and setup is a known workaround for the serverless-offline infinite redirect loop
-  app.use('/docs', swaggerUi.serve);
-  app.get('/docs', swaggerUi.setup(swaggerDocument));
+  // 1. API Gateway strips trailing slashes, causing an infinite redirect loop if we rely on /docs/
+  // Solution: Redirect exactly /docs to /docs/index.html so the browser has a reliable base path.
+  app.get('/docs', (req, res) => {
+    res.redirect(301, '/docs/index.html');
+  });
+
+  // 2. Intercept the HTML and Init JS requests. We use a response interceptor to replace
+  // the hardcoded local asset paths (which esbuild doesn't bundle) with CDN links.
+  app.use(
+    '/docs',
+    (req: express.Request, res: express.Response, next: express.NextFunction) => {
+      if (req.path === '/index.html' || req.path === '/swagger-ui-init.js') {
+        // Trick swaggerUi.setup into not doing its own internal redirects
+        req.originalUrl = '/docs/';
+        
+        // Intercept the HTML response to rewrite local paths to CDN
+        const originalSend = res.send;
+        res.send = function (body: any): express.Response {
+          if (typeof body === 'string' && body.includes('swagger-ui-bundle.js')) {
+            let customized = body.replace(
+              /\.\/swagger-ui-bundle\.js/g, 
+              'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui-bundle.min.js'
+            );
+            customized = customized.replace(
+              /\.\/swagger-ui-standalone-preset\.js/g, 
+              'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui-standalone-preset.min.js'
+            );
+            customized = customized.replace(
+              /\.\/swagger-ui\.css/g, 
+              'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.11.0/swagger-ui.min.css'
+            );
+            customized = customized.replace(
+              /href="\.\/favicon-.*?\.png"/g, 
+              'href="data:image/x-icon;base64,"' // Prevent 404s for favicon
+            );
+            return originalSend.call(this, customized);
+          }
+          return originalSend.call(this, body);
+        };
+
+        return swaggerUi.setup(swaggerDocument)(req, res, next);
+      }
+      next();
+    }
+  );
 }
 
 // Test-only route: triggers the global error handler to verify 500 behaviour.
