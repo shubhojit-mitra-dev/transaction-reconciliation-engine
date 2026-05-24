@@ -14,11 +14,12 @@
     "@repo/engine": "workspace:*",
     "@repo/logger": "workspace:*",
     "@repo/types": "workspace:*",
-    "express": "^4.19.2",
-    "serverless-http": "^3.2.0",
     "cors": "^2.8.5",
+    "express": "^4.19.2",
     "helmet": "^7.1.0",
-    "multer": "1.4.5-lts.1"
+    "multer": "1.4.5-lts.1",
+    "serverless-http": "^3.2.0",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.138",
@@ -27,6 +28,7 @@
     "@types/multer": "^1.4.11",
     "@types/node": "^20.0.0",
     "@types/supertest": "^6.0.2",
+    "@types/swagger-ui-express": "^4.1.8",
     "dotenv": "^16.4.5",
     "mongoose": "^8.4.1",
     "serverless": "^4.0.0",
