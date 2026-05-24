@@ -65,7 +65,9 @@ app.get('/docs/swagger.json', (req, res) => {
 });
 
 // Serve the interactive Swagger UI
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+// Splitting serve and setup is a known workaround for the serverless-offline infinite redirect loop
+app.use('/docs', swaggerUi.serve);
+app.get('/docs', swaggerUi.setup(swaggerDocument));
 
 // Test-only route: triggers the global error handler to verify 500 behaviour.
 // Guard prevents this route from existing outside test runs.
