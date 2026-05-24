@@ -15,30 +15,8 @@ Designed with an emphasis on **high-throughput memory efficiency**, **fault tole
 
 The system is deployed entirely serverless on AWS, ensuring zero-downtime scalability and highly optimized cost efficiency.
 
-```mermaid
-graph TD
-    Client[Client / Internal System] -->|POST /reconcile| API[Amazon API Gateway HTTP API]
-    Client -->|GET /report| API
-    
-    API --> Lambda[AWS Lambda: Reconciliation Service]
-    
-    subgraph Compute Layer
-        Lambda --> Stream[Stream Parser Node.js Pipeline]
-        Stream --> Matcher[Heuristic Matching Engine]
-        Matcher --> Normalizer[Data Normalization Layer]
-    end
-    
-    Lambda <--> DB[(MongoDB Cluster)]
-    
-    DB --> Log[CloudWatch Logs / Audit Trail]
-    
-    subgraph CI/CD Pipeline
-        GH[GitHub Actions] --> Turbo[Turborepo Cache]
-        Turbo --> SLS[Serverless Framework]
-        SLS --> S3[Deployment Artifact Bucket]
-        S3 --> AWS[CloudFormation / IAM]
-    end
-```
+<img width="1603" height="2063" alt="image" src="https://github.com/user-attachments/assets/c7edc934-5540-42ee-b2a3-b333272de617" />
+
 
 ## 🚀 Advanced Engineering Concepts
 
