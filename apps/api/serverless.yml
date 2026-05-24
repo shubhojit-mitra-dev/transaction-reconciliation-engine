@@ -8,6 +8,9 @@ provider:
   environment:
     MONGODB_URI: ${env:MONGODB_URI}
     NODE_ENV: ${self:provider.stage}
+  deploymentBucket:
+    # Use a custom prefix to satisfy the IAM least privilege policy "arn:aws:s3:::reconciliation-engine-*"
+    name: reconciliation-engine-deployments-${sls:instanceId}
   apiGateway:
     binaryMediaTypes:
       - 'multipart/form-data'
