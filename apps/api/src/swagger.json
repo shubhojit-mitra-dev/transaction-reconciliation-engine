@@ -59,7 +59,7 @@
                   },
                   "quantityTolerancePct": {
                     "type": "number",
-                    "description": "Override for quantity tolerance as percent points (not decimal fraction): 0.01 = 0.01%, 1 = 1%",
+                    "description": "Override for quantity tolerance as a percentage value where 0.01 represents 0.01% and 1 represents 1%",
                     "example": 0.01
                   },
                   "timestampToleranceSeconds": {

@@ -68,6 +68,7 @@ const isSwaggerDocsEnabled = nodeEnv !== 'prod' && nodeEnv !== 'production';
 
 if (isSwaggerDocsEnabled) {
   app.use('/docs', (_req, res, next) => {
+    // Swagger UI relies on inline script/style blocks, so docs route needs a relaxed policy.
     res.setHeader(
       'Content-Security-Policy',
       "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'",
