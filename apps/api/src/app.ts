@@ -68,10 +68,10 @@ const isSwaggerDocsEnabled = nodeEnv !== 'prod' && nodeEnv !== 'production';
 
 if (isSwaggerDocsEnabled) {
   app.use('/docs', (_req, res, next) => {
-    // Swagger UI relies on inline script/style blocks and CDN assets, so docs route needs a relaxed policy.
+    // Swagger UI relies on inline script/style blocks, eval(), and CDN assets.
     res.setHeader(
       'Content-Security-Policy',
-      "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com",
+      "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval' data: blob:; style-src * 'unsafe-inline' data: blob:; img-src * data: blob:; connect-src *;"
     );
     next();
   });
