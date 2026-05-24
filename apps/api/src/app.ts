@@ -73,6 +73,10 @@ if (isSwaggerDocsEnabled) {
       'Content-Security-Policy',
       "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval' data: blob:; style-src * 'unsafe-inline' data: blob:; img-src * data: blob:; connect-src *;"
     );
+    // Bust browser cache to ensure the new CSP is applied instead of a cached 304 response
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     next();
   });
 
