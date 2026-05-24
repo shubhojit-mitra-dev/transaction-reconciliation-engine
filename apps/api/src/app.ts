@@ -64,7 +64,7 @@ app.post(
 app.use('/report', reportRouter);
 
 const nodeEnv = (process.env.NODE_ENV ?? '').toLowerCase();
-const isSwaggerDocsEnabled = nodeEnv !== 'prod' && nodeEnv !== 'production';
+const isSwaggerDocsEnabled = (nodeEnv !== 'prod' && nodeEnv !== 'production') || process.env.ENABLE_SWAGGER === 'true';
 
 if (isSwaggerDocsEnabled) {
   app.use('/docs', (_req, res, next) => {
