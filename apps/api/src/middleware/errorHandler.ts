@@ -21,6 +21,11 @@ export function globalErrorHandler(
   res: Response,
   _next: NextFunction,
 ): void {
+  if (res.headersSent) {
+    _next(err);
+    return;
+  }
+
   logger.error('Unhandled error', {
     method: req.method,
     path: req.path,
