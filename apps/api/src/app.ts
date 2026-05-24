@@ -28,7 +28,7 @@ app.post(
     { name: 'user_file', maxCount: 1 },
     { name: 'exchange_file', maxCount: 1 },
   ]),
-  async (req, res) => {
+  async (req, res, next) => {
     try {
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
 
@@ -56,7 +56,7 @@ app.post(
 
       res.status(200).json(result);
     } catch (error) {
-      res.status(500).json({ error: 'An unexpected error occurred during reconciliation' });
+      next(error);
     }
   }
 );

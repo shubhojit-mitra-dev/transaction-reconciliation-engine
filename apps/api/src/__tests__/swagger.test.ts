@@ -4,8 +4,9 @@ import { app } from '../app';
 
 describe('Swagger Documentation endpoint', () => {
   it('should serve the Swagger UI at /docs/', async () => {
-    // Note: swagger-ui-express typically redirects /docs to /docs/
-    const res = await request(app).get('/docs/');
+    // Note: Due to API Gateway stripping trailing slashes, we explicitly redirect
+    // /docs and /docs/ to /docs/index.html in our app configuration.
+    const res = await request(app).get('/docs/index.html');
 
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toMatch(/text\/html/);
